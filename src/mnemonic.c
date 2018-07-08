@@ -90,33 +90,28 @@ jolt_err_t bm_entropy_to_mnemonic(char buf[], const uint16_t buf_len,
     return E_SUCCESS;
 }
 
-static void strnlower(char *s, const int n){
-    /* Converts a null-terminated string to lowercase up to n characters*/
-    for(unsigned int c=0; c <= n; c++){
-        if (s[c] >= 'A' && s[c] <= 'Z')
-            s[c] = s[c] + 32;
-    }
-}
-
-int16_t bm_search_wordlist(char *word, uint8_t word_len){
+int16_t bm_search_wordlist(const char *word, uint8_t word_len){
     /* Performs binary search on the wordlist
      *
      * Returns the index of the word that starts with parameter word.
      * Returns -1 if word is not found
      */
     uint16_t index = (1<<(BM_BITS_PER_WORD-1)) - 1;
+    char word_lower[10];
 
-    if( NULL == word || 0 == word_len ){
+    if( NULL == word || 0 == word_len || word_len >= sizeof(word_lower)){
         return -1;
     }
 
-    strnlower(word, word_len);
+    strncpy(word_lower, word, word_len);
+    word_lower[word_len] = '\0';
+    strlwr(word_lower);
 
     // Minimalistic Binary search for [0,2046]
     for(uint16_t depth=(1<<(BM_BITS_PER_WORD-1)); depth>0;){
         depth>>=1;
 
-        int res = strncmp(word, wordlist[index], word_len);
+        int res = strcmp(word_lower, wordlist[index]);
         if(res>0){
             index += depth;
         }
@@ -131,7 +126,7 @@ int16_t bm_search_wordlist(char *word, uint8_t word_len){
         }
     }
     // Check if it's zoo (index 2047)
-    if(strncmp(word, wordlist[2047], word_len)==0){
+    if(strcmp(word_lower, wordlist[2047])==0){
         return 2047;
     }
 
