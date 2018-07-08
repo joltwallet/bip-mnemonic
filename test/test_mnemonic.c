@@ -12,11 +12,9 @@
 #include "sodium.h"
 
 #include "bipmnemonic.h"
-#include "helpers.h"
 
 /* Some test vectors were sourced from:
  * https://github.com/trezor/python-mnemonic/blob/master/vectors.json */
-
 
 TEST_CASE("BIP39/44 Wordlist Search", "[bip_mnemonic]"){
     char word[10];
