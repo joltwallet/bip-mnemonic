@@ -91,8 +91,10 @@ TEST_CASE("BIP39/44 Mnemonic to Binary", "[bip_mnemonic]") {
     jolt_err_t res;
 
     /* Test 1 */
-    strcpy(mnemonic, "abandon abandon abandon abandon abandon abandon "
-            "abandon abandon abandon abandon abandon about");
+    strcpy(mnemonic, 
+            "abandon abandon abandon abandon abandon abandon "
+            "abandon abandon abandon abandon abandon about"
+            );
     res = bm_mnemonic_to_bin(guess_bin, sizeof(guess_bin), mnemonic);
     sodium_memzero(mnemonic, sizeof(mnemonic));
     sodium_hex2bin(gt_bin, sizeof(gt_bin), \
@@ -100,10 +102,26 @@ TEST_CASE("BIP39/44 Mnemonic to Binary", "[bip_mnemonic]") {
             HEX_256, NULL, NULL, NULL);
     TEST_ASSERT_EQUAL_INT_MESSAGE(E_SUCCESS, res,
             "bm_bin_to_mnemonic returned an unsuccessful code");
-    //TEST_ASSERT_EQUAL_STRING();
     TEST_ASSERT_EQUAL_HEX8_ARRAY(gt_bin, guess_bin, 128/8);
     sodium_memzero(guess_bin, sizeof(guess_bin));
     sodium_memzero(gt_bin, sizeof(gt_bin));
+
+    /* Test 2 */
+    strcpy(mnemonic,
+            "legal winner thank year wave sausage worth useful legal winner "
+            "thank yellow"
+          );
+    res = bm_mnemonic_to_bin(guess_bin, sizeof(guess_bin), mnemonic);
+    sodium_memzero(mnemonic, sizeof(mnemonic));
+    sodium_hex2bin(gt_bin, sizeof(gt_bin), \
+            "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f",
+            HEX_256, NULL, NULL, NULL);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(E_SUCCESS, res,
+            "bm_bin_to_mnemonic returned an unsuccessful code");
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(gt_bin, guess_bin, 128/8);
+    sodium_memzero(guess_bin, sizeof(guess_bin));
+    sodium_memzero(gt_bin, sizeof(gt_bin));
+
 }
 
 TEST_CASE("BIP39/44 Binary to Mnemonic", "[bip_mnemonic]"){

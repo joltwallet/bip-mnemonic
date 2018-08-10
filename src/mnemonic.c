@@ -139,10 +139,10 @@ jolt_err_t bm_mnemonic_to_bin(unsigned char *buf, size_t buf_len, const char *mn
          (m_len == 18 && (computed_checksum[0] & 0xFC) == (user_checksum & 0xFC)) ||
          (m_len == 24 && (computed_checksum[0] == user_checksum)) ) {
         if( NULL != buf ) {
-            if( buf_len < m_len ) {
+            if( buf_len < byte_len ) {
                 return E_INSUFFICIENT_BUF;
             }
-            memcpy(buf, bin, sizeof(byte_len));
+            memcpy(buf, bin, byte_len);
         }
         res = E_SUCCESS;
     }
