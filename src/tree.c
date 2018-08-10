@@ -57,8 +57,8 @@ static void hd_node_iterate(hd_node_t *node, uint32_t val){
     sodium_memzero(&state, sizeof(state));
 }
 
-void bm_master_seed_to_node(hd_node_t *node, uint512_t master_seed, char *bip32_key,
-        uint8_t path_len, ...) {
+static void vbm_master_seed_to_node(hd_node_t *node, uint512_t master_seed, char *bip32_key,
+        uint8_t path_len, va_list ap) {
     /* Derives node from master_seed along specified path 
      *
      * Typically bip32_key is "Bitcoin seed" or "ed25519 seed"
@@ -69,13 +69,17 @@ void bm_master_seed_to_node(hd_node_t *node, uint512_t master_seed, char *bip32_
     if( path_len <= 1 || bip32_key==NULL ) {
         return;
     }
+
+    hd_node_init(node, master_seed, bip32_key);
+    for(uint8_t i=0; i<path_len; i++) {
+        hd_node_iterate(node, va_arg(ap, uint32_t));
+    }
+}
+void bm_master_seed_to_node(hd_node_t *node, uint512_t master_seed, char *bip32_key,
+        uint8_t path_len, ...) {
     va_list ap;
     va_start(ap, path_len);
-
-    hd_node_init(&node, master_seed, bip32_key);
-    for(uint8_t i=0; i<path_len; i++) {
-        hd_node_iterate(&node, va_arg(ap, uint32_t));
-    }
+    vbm_master_seed_to_node(node, master_seed, bip32_key, path_len, ap);
     va_end(ap);
 }
 
@@ -94,13 +98,8 @@ void bm_master_seed_to_private_key(uint256_t private_key, uint512_t master_seed,
     }
     va_list ap;
     va_start(ap, path_len);
-
     CONFIDENTIAL hd_node_t node;
-    hd_node_init(&node, master_seed, bip32_key);
-    for(uint8_t i=0; i<path_len; i++) {
-        hd_node_iterate(&node, va_arg(ap, uint32_t));
-    }
-
+    vbm_master_seed_to_node(&node, master_seed, bip32_key, path_len, ap);
     va_end(ap);
     memcpy(private_key, node.key, sizeof(node.key));
     sodium_memzero( &node, sizeof(node) );
