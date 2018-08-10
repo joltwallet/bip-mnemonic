@@ -18,11 +18,6 @@
 #include "jolttypes.h"
 #include "joltcrypto.h"
 
-typedef struct hd_node_t {
-    uint256_t key;
-    uint256_t chain_code;
-} hd_node_t;
-
 static void hd_node_init(hd_node_t *node, const uint512_t master_seed, 
         const char *key){
     /* key - null-terminated string. Typically "ed25519 seed" or "Bitcoin Seed" */
@@ -60,6 +55,28 @@ static void hd_node_iterate(hd_node_t *node, uint32_t val){
 
     sodium_memzero(digest, sizeof(digest));
     sodium_memzero(&state, sizeof(state));
+}
+
+void bm_master_seed_to_node(hd_node_t *node, uint512_t master_seed, char *bip32_key,
+        uint8_t path_len, ...) {
+    /* Derives node from master_seed along specified path 
+     *
+     * Typically bip32_key is "Bitcoin seed" or "ed25519 seed"
+     *
+     * Each path should be a uint32_t;
+     * Or the value with 0x80000000 to be hardened
+     * */
+    if( path_len <= 1 || bip32_key==NULL ) {
+        return;
+    }
+    va_list ap;
+    va_start(ap, path_len);
+
+    hd_node_init(&node, master_seed, bip32_key);
+    for(uint8_t i=0; i<path_len; i++) {
+        hd_node_iterate(&node, va_arg(ap, uint32_t));
+    }
+    va_end(ap);
 }
 
 void bm_master_seed_to_private_key(uint256_t private_key, uint512_t master_seed, char * bip32_key,
