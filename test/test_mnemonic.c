@@ -99,7 +99,7 @@ TEST_CASE("BIP39/44 Mnemonic to Binary", "[bip_mnemonic]") {
     sodium_memzero(mnemonic, sizeof(mnemonic));
     sodium_hex2bin(gt_bin, sizeof(gt_bin), \
             "00000000000000000000000000000000",
-            HEX_256, NULL, NULL, NULL);
+            HEX_128, NULL, NULL, NULL);
     TEST_ASSERT_EQUAL_INT_MESSAGE(E_SUCCESS, res,
             "bm_bin_to_mnemonic returned an unsuccessful code");
     TEST_ASSERT_EQUAL_HEX8_ARRAY(gt_bin, guess_bin, 128/8);
@@ -115,6 +115,23 @@ TEST_CASE("BIP39/44 Mnemonic to Binary", "[bip_mnemonic]") {
     sodium_memzero(mnemonic, sizeof(mnemonic));
     sodium_hex2bin(gt_bin, sizeof(gt_bin), \
             "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f",
+            HEX_128, NULL, NULL, NULL);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(E_SUCCESS, res,
+            "bm_bin_to_mnemonic returned an unsuccessful code");
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(gt_bin, guess_bin, 128/8);
+    sodium_memzero(guess_bin, sizeof(guess_bin));
+    sodium_memzero(gt_bin, sizeof(gt_bin));
+
+    /* Test 3 */
+    strcpy(mnemonic,
+            "panda eyebrow bullet gorilla call smoke muffin taste mesh "
+            "discover soft ostrich alcohol speed nation flash devote level "
+            "hobby quick inner drive ghost inside"
+          );
+    res = bm_mnemonic_to_bin(guess_bin, sizeof(guess_bin), mnemonic);
+    sodium_memzero(mnemonic, sizeof(mnemonic));
+    sodium_hex2bin(gt_bin, sizeof(gt_bin), \
+            "9f6a2878b2520799a44ef18bc7df394e7061a224d2c33cd015b157d746869863",
             HEX_256, NULL, NULL, NULL);
     TEST_ASSERT_EQUAL_INT_MESSAGE(E_SUCCESS, res,
             "bm_bin_to_mnemonic returned an unsuccessful code");
@@ -132,7 +149,7 @@ TEST_CASE("BIP39/44 Binary to Mnemonic", "[bip_mnemonic]"){
     /* Test 1 */
     sodium_hex2bin(entropy, sizeof(entropy), \
             "00000000000000000000000000000000",
-            HEX_256, NULL, NULL, NULL);
+            HEX_128, NULL, NULL, NULL);
     res = bm_bin_to_mnemonic(buf, sizeof(buf), entropy, 128);
     sodium_memzero(entropy, sizeof(entropy));
     TEST_ASSERT_EQUAL_INT_MESSAGE(E_SUCCESS, res,
@@ -145,7 +162,7 @@ TEST_CASE("BIP39/44 Binary to Mnemonic", "[bip_mnemonic]"){
     /* Test 2 */
     sodium_hex2bin(entropy, sizeof(entropy), \
             "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f",
-            HEX_256, NULL, NULL, NULL);
+            HEX_128, NULL, NULL, NULL);
     res = bm_bin_to_mnemonic(buf, sizeof(buf), entropy, 128);
     sodium_memzero(entropy, sizeof(entropy));
     TEST_ASSERT_EQUAL_INT_MESSAGE(E_SUCCESS, res,
