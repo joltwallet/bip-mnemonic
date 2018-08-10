@@ -11,6 +11,10 @@
 #include "../word_list/bip39_en.h"
 
 
+static uint8_t get_word_count(const char *str);
+static void entropy256(uint256_t ent);
+static uint8_t get_word_len(char **start, const char *str);
+
 static void entropy256(uint256_t ent){
     /* Generates random 256-bits
      * Uses randombytes_random() from libsodium.
@@ -31,28 +35,23 @@ jolt_err_t bm_mnemonic_generate(char buf[], uint16_t buf_len, uint16_t strength)
     jolt_err_t res;
     CONFIDENTIAL uint256_t entropy;
     entropy256(entropy);
-    res = bm_entropy_to_mnemonic(buf, buf_len, entropy, strength);
+    res = bm_bin_to_mnemonic(buf, buf_len, entropy, strength);
     sodium_memzero(entropy, sizeof(entropy));
     return res;
 }
 
-jolt_err_t bm_mnemonic_to_bin(uint256_t bin, uint16_t checksum, char *mnemonic){
-    /* Needs to be implemented.
-     * Returns results in bin and checksum.
-     * */
-    return E_FAILURE;
-}
-
-jolt_err_t bm_entropy_to_mnemonic(char buf[], const uint16_t buf_len,
+jolt_err_t bm_bin_to_mnemonic(char buf[], const uint16_t buf_len,
         const uint256_t entropy, const uint16_t strength){
-    /* Strength in bits 
+    /* Derives mnemonic from provided entropy into the buffer buf.
      * Sets Buf to a space separated mnemonic string with length according to 
-     * strength. This mnemonic string is derived from the 256-bit entropy. */
+     * strength.
+     */
     if(strength % 32 || strength < 128 || strength > 256){
         return E_INVALID_STRENGTH;
     }
 
-    /* Generate Checksum */
+    /* Generate Checksum; there are ENT/32 bits in the checksum */
+    // 128->4; 192->6; 256->8
     uint8_t entropy_len = strength / 8;
     uint8_t m_len = entropy_len * 3 / 4; //number of mnemonic words
     CONFIDENTIAL unsigned char cs_entropy[sizeof(uint256_t) + 1];
@@ -88,6 +87,75 @@ jolt_err_t bm_entropy_to_mnemonic(char buf[], const uint16_t buf_len,
     sodium_memzero(cs_entropy, sizeof(cs_entropy));
 
     return E_SUCCESS;
+}
+
+jolt_err_t bm_mnemonic_to_bin(unsigned char *buf, size_t buf_len, const char *mnemonic) {
+    /* Expects a null-terminated mnemonic string.
+     * bin must either be 32-bytes (256-bits) or NULL;
+     * if bin is NULL, this function only verifies the mnemonic checksum
+     * The mnemonic can have arbitrary whitespace leading, trailing, and
+     * between workds
+     */
+    int8_t j;
+    uint8_t m_len, i_word;
+    CONFIDENTIAL uint8_t current_word_len;
+    int16_t bit_idx;
+    CONFIDENTIAL int16_t mnemonic_index;
+    char *current_word, *start;
+    CONFIDENTIAL unsigned char bin[sizeof(uint256_t)] = {0};
+    jolt_err_t res;
+
+    // Check number of words in mnemonic
+    m_len = get_word_count(mnemonic);
+    if ( m_len!=12 && m_len!=18 && m_len!=24 ) {
+        res = E_INVALID_MNEMONIC_LEN;
+        goto exit;
+    }
+
+    // Iterate through words in user's mnemonic
+    for(i_word=0, bit_idx=0, current_word=(char *)mnemonic;
+            i_word < m_len;
+            i_word++, current_word+=current_word_len){
+        current_word_len = get_word_len(&start, current_word);
+        current_word = start;
+        mnemonic_index = bm_search_wordlist(current_word, current_word_len);
+        if( mnemonic_index == -1 ) {
+            res = E_INVALID_MNEMONIC;
+            goto exit;
+        }
+        for( j=BM_BITS_PER_WORD-1; j>=0; j--, bit_idx++ ) {
+            if(mnemonic_index & (1 << j)){
+                bin[bit_idx/8] |= 1 << (7 - (bit_idx % 8)) ;
+            }
+        }
+    }
+
+    // Verify Checksum; checksum is at most 8-bits
+    uint8_t byte_len = m_len*4/3;
+    CONFIDENTIAL unsigned char user_checksum = bin[byte_len];
+    CONFIDENTIAL unsigned char computed_checksum[sizeof(uint256_t)] = {0};
+    crypto_hash_sha256(computed_checksum, bin, byte_len);
+    if ( (m_len == 12 && (computed_checksum[0] & 0xF0) == (user_checksum & 0xF0)) ||
+         (m_len == 18 && (computed_checksum[0] & 0xFC) == (user_checksum & 0xFC)) ||
+         (m_len == 24 && (computed_checksum[0] == user_checksum)) ) {
+        if( NULL != buf ) {
+            if( buf_len < byte_len ) {
+                return E_INSUFFICIENT_BUF;
+            }
+            memcpy(buf, bin, byte_len);
+        }
+        res = E_SUCCESS;
+    }
+    else {
+        res = E_INVALID_CHECKSUM;
+    }
+exit:
+    sodium_memzero(&user_checksum, sizeof(user_checksum));
+    sodium_memzero(computed_checksum, sizeof(computed_checksum));
+    sodium_memzero(bin, sizeof(bin));
+    sodium_memzero(&mnemonic_index, sizeof(mnemonic_index));
+    sodium_memzero(&current_word_len, sizeof(current_word_len));
+    return res;
 }
 
 int16_t bm_search_wordlist(const char *word, uint8_t word_len){
@@ -172,49 +240,7 @@ jolt_err_t bm_verify_mnemonic(const char mnemonic[]){
      * The mnemonic can have arbitrary whitespace leading, trailing, and
      * between workds
      */
-    int8_t j;
-    uint8_t m_len, i_word, current_word_len;
-    int16_t bit_idx, mnemonic_index;
-    char *current_word, *start;
-    CONFIDENTIAL unsigned char cs_entropy[sizeof(uint256_t) + 1] = {0};
-
-    // Check number of words in mnemonic
-    m_len = get_word_count(mnemonic);
-    if (m_len!=12 && m_len!=18 && m_len!=24){
-        return E_INVALID_MNEMONIC_LEN;
-    }
-
-    // Iterate through words in user's mnemonic
-    for(i_word=0, bit_idx=0, current_word=(char *)mnemonic;
-            i_word < m_len;
-            i_word++, current_word+=current_word_len){
-        current_word_len = get_word_len(&start, current_word);
-        current_word = start;
-        mnemonic_index = bm_search_wordlist(current_word, current_word_len);
-        if(mnemonic_index == -1){
-            return E_INVALID_MNEMONIC;
-        }
-        for(j=BM_BITS_PER_WORD-1; j>=0; j--, bit_idx++){
-            if(mnemonic_index & (1 << j)){
-                cs_entropy[bit_idx/8] |= 1 << (7 - (bit_idx % 8)) ;
-            }
-        }
-    }
-
-    // Verify Checksum
-    cs_entropy[32] = cs_entropy[m_len * 4/3];
-    crypto_hash_sha256(cs_entropy, cs_entropy, m_len * 4/3);
-    if (m_len == 12 && (cs_entropy[0] & 0xF0) == (cs_entropy[32] & 0xF0) ) {
-        return E_SUCCESS;
-    }
-    else if (m_len == 18 && (cs_entropy[0] & 0xFC) == (cs_entropy[32] & 0xFC)) {
-        return E_SUCCESS;
-    }
-    else if (m_len == 24 && cs_entropy[0] == cs_entropy[32]) {
-        return E_SUCCESS;
-    }
-
-    return E_INVALID_CHECKSUM;
+    return bm_mnemonic_to_bin(NULL, 0, mnemonic);
 }
 
 jolt_err_t bm_mnemonic_to_master_seed(uint512_t master_seed, 

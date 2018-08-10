@@ -11,8 +11,9 @@
 
 jolt_err_t bm_mnemonic_generate(char buf[], uint16_t buf_len, uint16_t strength);
 
-jolt_err_t bm_entropy_to_mnemonic(char buf[], const uint16_t buf_len,
+jolt_err_t bm_bin_to_mnemonic(char buf[], const uint16_t buf_len,
         const uint256_t entropy, const uint16_t strength);
+jolt_err_t bm_mnemonic_to_bin(unsigned char *buf, size_t buf_len, const char *mnemonic);
 
 int16_t bm_search_wordlist(const char *word, uint8_t word_len);
 
