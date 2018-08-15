@@ -14,6 +14,7 @@ typedef struct hd_node_t {
     uint256_t chain_code;
 } hd_node_t;
 
+void bm_entropy256(uint256_t ent);
 jolt_err_t bm_mnemonic_generate(char buf[], uint16_t buf_len, uint16_t strength);
 
 jolt_err_t bm_bin_to_mnemonic(char buf[], const uint16_t buf_len,
@@ -29,6 +30,10 @@ void bm_master_seed_to_node(hd_node_t *node, uint512_t master_seed, char *bip32_
 
 void bm_master_seed_to_private_key(uint256_t private_key, uint512_t master_seed, char * bip32_key,
         uint8_t path_len, ...);
+
+void hd_node_iterate(hd_node_t *node, uint32_t val);
+
+void hd_node_copy(hd_node_t *dst, hd_node_t *src);
 
 jolt_err_t bm_mnemonic_to_master_seed(uint512_t master_seed, 
         const char mnemonic[], const char passphrase[]);

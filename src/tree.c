@@ -35,7 +35,11 @@ static void hd_node_init(hd_node_t *node, const uint512_t master_seed,
     sodium_memzero(&state, sizeof(state));
 }
 
-static void hd_node_iterate(hd_node_t *node, uint32_t val){
+void hd_node_copy(hd_node_t *dst, hd_node_t *src) {
+    memcpy(dst, src, sizeof(hd_node_t));
+}
+
+void hd_node_iterate(hd_node_t *node, uint32_t val) {
     /* Overwrites node values according to val */
     CONFIDENTIAL uint512_t digest;
     CONFIDENTIAL crypto_auth_hmacsha512_state state;
