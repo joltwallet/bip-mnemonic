@@ -12,10 +12,9 @@
 
 
 static uint8_t get_word_count(const char *str);
-static void entropy256(uint256_t ent);
 static uint8_t get_word_len(char **start, const char *str);
 
-static void entropy256(uint256_t ent){
+void bm_entropy256(uint256_t ent){
     /* Generates random 256-bits
      * Uses randombytes_random() from libsodium.
      * If libsodium is properly ported, this is a cryptographically secure
@@ -34,7 +33,7 @@ jolt_err_t bm_mnemonic_generate(char buf[], uint16_t buf_len, uint16_t strength)
     /* Strength in bits; shoudl really always be 256 */
     jolt_err_t res;
     CONFIDENTIAL uint256_t entropy;
-    entropy256(entropy);
+    bm_entropy256(entropy);
     res = bm_bin_to_mnemonic(buf, buf_len, entropy, strength);
     sodium_memzero(entropy, sizeof(entropy));
     return res;
