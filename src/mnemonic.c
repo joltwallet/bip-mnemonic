@@ -243,7 +243,14 @@ jolt_err_t bm_verify_mnemonic(const char mnemonic[]){
 }
 
 jolt_err_t bm_mnemonic_to_master_seed(uint512_t master_seed, 
-        const char mnemonic[], const char passphrase[]){
+        const char mnemonic[], const char passphrase[]) {
+    return bm_mnemonic_to_master_seed_progress(master_seed, mnemonic,
+            passphrase, NULL);
+}
+
+jolt_err_t bm_mnemonic_to_master_seed_progress(uint512_t master_seed, 
+        const char mnemonic[], const char passphrase[], uint8_t *progress) {
+
     /* mnemonic must be a null terminated string.
      * passphrase must be a null terminated string. Up to BM_PASSPHRASE_BUF_LEN bytes
      * It is recommended to verify the mnemonic before calling this function.
@@ -278,11 +285,11 @@ jolt_err_t bm_mnemonic_to_master_seed(uint512_t master_seed,
 
     memcpy(salt, "mnemonic", 8);
     strcpy(salt + 8, passphrase);
-    pbkdf2_hmac_sha512(
+    pbkdf2_hmac_sha512_progress(
             (uint8_t *) clean_mnemonic, strlen(clean_mnemonic), 
             (uint8_t *) salt, strlen(salt),
             (uint8_t *) master_seed, sizeof(uint512_t),
-            2048);
+            2048, progress);
     sodium_memzero(salt, strlen(salt));
     sodium_memzero(clean_mnemonic, strlen(clean_mnemonic));
     return E_SUCCESS;
