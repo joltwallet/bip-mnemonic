@@ -39,6 +39,6 @@ jolt_err_t bm_mnemonic_to_master_seed(uint512_t master_seed,
         const char mnemonic[], const char passphrase[]);
 
 jolt_err_t bm_mnemonic_to_master_seed_progress(uint512_t master_seed, 
-        const char mnemonic[], const char passphrase[], uint8_t *progress);
+        const char mnemonic[], const char passphrase[], int8_t *progress);
 
 #endif
