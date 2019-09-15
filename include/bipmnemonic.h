@@ -2,6 +2,7 @@
 #define __BIP_MNEMONIC_H__
 
 #include "stdint.h"
+#include "stddef.h"
 #include "jolttypes.h"
 
 #define BM_HARDENED 0x80000000
